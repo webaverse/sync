@@ -161,9 +161,6 @@ class HTMLClient extends EventTarget {
       this.state.sync = false;
     }
   }
-  /* pullTrim(baseIndex) {
-    this.state.baseIndex = baseIndex;
-  } */
   applyOps(ops) {
     for (let i = 0; i < ops.length; i++) {
       this.state.json = json1.type.apply(this.state.json, ops[i]);
