@@ -113,7 +113,7 @@ class HTMLClient extends EventTarget {
 
     this.state = {
       parsedHtmlEl,
-      json: serializeHtml(text),
+      json: parseHtml(text),
       baseIndex: 0,
       sync: true,
     };
