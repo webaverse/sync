@@ -39,7 +39,7 @@ const CustomEvent = globalThis.CustomEvent || class CustomEventShim {
 }
 
 class HTMLServer extends EventTarget {
-  constructor(text) {
+  constructor(text, options = {}) {
     super();
 
     this.firstJson = parseHtml(text);
@@ -47,6 +47,10 @@ class HTMLServer extends EventTarget {
     this.baseIndex = 0;
     this.history = [];
     this.connections = [];
+    if (typeof options.maxHistory !== 'number') {
+      options.maxHistory = 1024;
+    }
+    this.options = options;
   }
   connect(c) {
     this.dispatchEvent(new CustomEvent('send', {
@@ -70,19 +74,27 @@ class HTMLServer extends EventTarget {
   pushOps(ops, baseIndex, c) {
     const currentBaseIndex = this.baseIndex + this.history.length;
     if (currentBaseIndex !== baseIndex) {
-      const delay = currentBaseIndex - baseIndex;
-      for (let i = 0; i < ops.length; i++) {
-        for (let j = 0; j < delay; j++) {
-          const result = json1.type.tryTransform(ops[i], this.history[this.history.length - delay + j], 'left');
-          if (result.ok) {
-            ops[i] = result.result;
-          } else {
-            ops[i] = null;
-            break;
+      if (baseIndex >= this.baseIndex) {
+        const delay = currentBaseIndex - baseIndex;
+        if (delay > 0) {
+          for (let i = 0; i < ops.length; i++) {
+            for (let j = 0; j < delay; j++) {
+              const result = json1.type.tryTransform(ops[i], this.history[this.history.length - delay + j], 'left');
+              if (result.ok) {
+                ops[i] = result.result;
+              } else { // conflict
+                ops[i] = null;
+                break;
+              }
+            }
           }
+          ops = ops.filter(op => op !== null);
+        } else { // in the future
+          ops.length = 0;
         }
+      } else { // not enough history
+        ops.length = 0;
       }
-      ops = ops.filter(op => op !== null);
     }
     if (ops.length > 0) {
       for (let i = 0; i < this.connections.length; i++) {
@@ -105,6 +117,10 @@ class HTMLServer extends EventTarget {
         this.lastJson = json1.type.apply(this.lastJson, ops[i]);
       }
       this.history.push.apply(this.history, ops);
+      while (this.history.length >= this.options.maxHistory) {
+        this.history.shift();
+        this.baseIndex++;
+      }
     }
     if (currentBaseIndex !== baseIndex) {
       this.dispatchEvent(new CustomEvent('send', {
