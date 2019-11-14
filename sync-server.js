@@ -57,7 +57,7 @@ class HTMLServer extends EventTarget {
       detail: {
         connection: c,
         message: {
-          type: 'init',
+          method: 'init',
           json: JSON.parse(JSON.stringify(this.lastJson)),
           baseIndex: this.baseIndex + this.history.length,
         },
@@ -104,7 +104,7 @@ class HTMLServer extends EventTarget {
             detail: {
               connection: c2,
               message: {
-                type: 'ops',
+                method: 'ops',
                 ops,
                 baseIndex: this.baseIndex + this.history.length,
               },
@@ -127,7 +127,7 @@ class HTMLServer extends EventTarget {
         detail: {
           connection: c,
           message: {
-            type: 'init',
+            method: 'init',
             json: JSON.parse(JSON.stringify(this.lastJson)),
             baseIndex: this.baseIndex + this.history.length,
           },

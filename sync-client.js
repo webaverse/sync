@@ -119,15 +119,22 @@ class HTMLClient extends EventTarget {
     };
   }
   write(entry) {
-    const {type} = entry;
-    if (type === 'init') {
-      this.pullInit(entry.json, entry.baseIndex);
-    } else if (type === 'ops') {
-      if (this.state.sync) {
-        this.pullOps(entry.ops, entry.baseIndex);
+    const {method} = entry;
+    switch (method) {
+      case 'init': {
+        this.pullInit(entry.json, entry.baseIndex);
+        break;
       }
-    } else {
-      console.warn(`unknown entry type: ${type}`);
+      case 'ops': {
+        if (this.state.sync) {
+          this.pullOps(entry.ops, entry.baseIndex);
+        }
+        break;
+      }
+      default: {
+        console.warn(`unknown entry method: ${method}`);
+        break;
+      }
     }
   }
   pullInit(json, baseIndex) {
