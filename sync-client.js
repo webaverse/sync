@@ -182,8 +182,12 @@ class HTMLClient extends EventTarget {
       this.state.parsedHtmlEl.observer.takeRecords();
       console.log('ops', ops);
       this.applyOps(ops);
+      const {baseIndex} = this.state;
       this.dispatchEvent(new CustomEvent('message', {
-        detail: ops,
+        detail: {
+          ops,
+          baseIndex,
+        },
       }));
 
       return text;

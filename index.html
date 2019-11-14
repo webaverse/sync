@@ -363,7 +363,8 @@ const htmlServer = new HTMLServer(`<a class=lol>zol<b></b><xr-iframe src=lol></x
     pushButton.innerText = `Push (${outQueue.length})`;
   };
   c.addEventListener('message', e => {
-    outQueue.push.apply(outQueue, e.detail);
+    const {ops} = e.detail;
+    outQueue.push.apply(outQueue, ops);
     pushButton.innerText = `Push (${outQueue.length})`;
   });
   codeInput.addEventListener('change', () => {
