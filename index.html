@@ -332,10 +332,10 @@ const htmlServer = new HTMLServer(`<a class=lol>zol<b></b><xr-iframe src=lol></x
 [
   [document.getElementById('code1'), document.getElementById('push1'), document.getElementById('pull1')],
   [document.getElementById('code2'), document.getElementById('push2'), document.getElementById('pull2')],
-].forEach(([codeInput, pushButton, pullButton], clientId) => {
-  const c = new HTMLClient(clientId);
+].forEach(([codeInput, pushButton, pullButton], i) => {
+  const c = new HTMLClient();
   c.addEventListener('localUpdate', e => {
-    // console.log('local update', clientId, e.detail, new Error().stack);
+    // console.log('local update', i, e.detail, new Error().stack);
     codeInput.value = e.detail;
   });
   let inQueue = [];
@@ -366,7 +366,7 @@ const htmlServer = new HTMLServer(`<a class=lol>zol<b></b><xr-iframe src=lol></x
   });
   codeInput.addEventListener('change', () => {
     const newText = codeInput.value;
-    // console.log('change', clientId, newText);
+    // console.log('change', i, newText);
     const normalizedNewText = c.pushUpdate(newText);
     if (normalizedNewText !== newText) {
       codeInput.value = normalizedNewText;
@@ -381,7 +381,7 @@ const htmlServer = new HTMLServer(`<a class=lol>zol<b></b><xr-iframe src=lol></x
 
   htmlServer.connect(c);
   _flushIn();
-  if (clientId === 1) {
+  if (i === 1) {
     codeInput.value = `<a class=lol>zol<b></b><xr-iframe src=lol position="2 1 0"></xr-iframe></a>`;
     codeInput.dispatchEvent(new CustomEvent('change'));
   }

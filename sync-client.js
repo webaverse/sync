@@ -76,10 +76,8 @@ const _mutateHtml = (el, text) => {
 };
 
 class HTMLClient extends EventTarget {
-  constructor(clientId) {
+  constructor() {
     super();
-
-    this.clientId = clientId;
 
     const userCode = document.createElement('div');
     userCode.classList.add('user-code');
