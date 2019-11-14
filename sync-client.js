@@ -95,9 +95,13 @@ class HTMLClient extends EventTarget {
 
       parsedHtmlEl2.innerHTML = serializeHtml(this.state.json);
       const ops = _mutateHtml(parsedHtmlEl2, newText);
+      const {baseIndex} = this.state;
       this.applyOps(ops);
       this.dispatchEvent(new CustomEvent('message', {
-        detail: ops,
+        detail: {
+          ops,
+          baseIndex,
+        },
       }));
       this.dispatchEvent(new CustomEvent('localUpdate', {
         detail: newText,
