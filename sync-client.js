@@ -2,6 +2,8 @@ import json1 from './json1.js';
 import morphdom from './morphdom.js';
 import {parseHtml, serializeHtml} from './html-utils.js';
 
+const maxTextLength = 1024 * 1024;
+
 const _getKeyPath = (parent, child) => {
   const result = [];
   for (; child; child = child.parentNode) {
@@ -169,17 +171,21 @@ class HTMLClient extends EventTarget {
     this.state.baseIndex += ops.length;
   }
   pushUpdate(text) {
-    text = serializeHtml(parseHtml(text));
+    if (text.length < maxTextLength) {
+      text = serializeHtml(parseHtml(text));
 
-    const ops = _mutateHtml(this.state.parsedHtmlEl, text);
-    this.state.parsedHtmlEl.observer.takeRecords();
-    console.log('ops', ops);
-    this.applyOps(ops);
-    this.dispatchEvent(new CustomEvent('message', {
-      detail: ops,
-    }));
+      const ops = _mutateHtml(this.state.parsedHtmlEl, text);
+      this.state.parsedHtmlEl.observer.takeRecords();
+      console.log('ops', ops);
+      this.applyOps(ops);
+      this.dispatchEvent(new CustomEvent('message', {
+        detail: ops,
+      }));
 
-    return text;
+      return text;
+    } else {
+      throw new Error(`text too large: ${text.length}/${maxTextLength}`);
+    }
   }
 }
 export default HTMLClient;
