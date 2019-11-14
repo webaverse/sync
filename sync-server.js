@@ -1,7 +1,7 @@
 import json1 from './json1.js';
 import {parseHtml, serializeHtml} from './html-utils.js';
 
-const EventTarget = self.EventTarget || class EventTargetShim {
+const EventTarget = globalThis.EventTarget || class EventTargetShim {
   constructor() {
     this.listeners = {};
   }
@@ -31,7 +31,7 @@ const EventTarget = self.EventTarget || class EventTargetShim {
     }
   }
 }
-const CustomEvent = self.CustomEvent || class CustomEventShim {
+const CustomEvent = globalThis.CustomEvent || class CustomEventShim {
   constructor(type, options = {}) {
     this.type = type;
     this.detail = options.detail;
