@@ -61,6 +61,12 @@ class HTMLServer extends EventTarget {
     }));
     this.connections.push(c);
   }
+  disconnect(c) {
+    const index = this.connections.indexOf(c);
+    if (index !== -1) {
+      this.connections.splice(index);
+    }
+  }
   pushOps(ops, baseIndex, c) {
     const currentBaseIndex = this.baseIndex + this.history.length;
     if (currentBaseIndex !== baseIndex) {
