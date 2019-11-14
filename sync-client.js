@@ -1,6 +1,6 @@
-import parse5 from './parse5.js';
-import morphdom from './morphdom.js';
 import json1 from './json1.js';
+import morphdom from './morphdom.js';
+import {parseHtml, serializeHtml} from './html-utils.js';
 
 const _getKeyPath = (parent, child) => {
   const result = [];
@@ -30,47 +30,6 @@ const _getNodeIndex = n => {
   // }
   return -1;
 };
-const _parseHtml = s => {
-  const result = parse5.parseFragment(s);
-  const _recurse = n => {
-    if (n.parentNode) {
-      delete n.parentNode;
-    }
-    if (n.attrs) {
-      const attrs = {};
-      for (let i = 0; i < n.attrs.length; i++) {
-        attrs[n.attrs[i].name] = n.attrs[i];
-      }
-      n.attrs = attrs;
-    }
-    if (n.childNodes) {
-      for (let i = 0; i < n.childNodes.length; i++) {
-        _recurse(n.childNodes[i]);
-      }
-    }
-  };
-  _recurse(result);
-  return result;
-};
-const _serializeHtml = j => {
-  j = JSON.parse(JSON.stringify(j));
-  const _recurse = n => {
-    if (n.attrs) {
-      const attrs = [];
-      for (const k in n.attrs) {
-        attrs.push(n.attrs[k]);
-      }
-      n.attrs = attrs;
-    }
-    if (n.childNodes) {
-      for (let i = 0; i < n.childNodes.length; i++) {
-        _recurse(n.childNodes[i]);
-      }
-    }
-  };
-  _recurse(j);
-  return parse5.serialize(j);
-};
 const _mutateHtml = (el, text) => {
   const ops = [];
   morphdom(el, `<div>${text}</div>`, {
@@ -78,11 +37,11 @@ const _mutateHtml = (el, text) => {
       const keyPath = _getKeyPath(el, n);
       const {nodeType} = n;
       if (nodeType === Node.ELEMENT_NODE) {
-        const json = _parseHtml(n.outerHTML).childNodes[0];
+        const json = parseHtml(n.outerHTML).childNodes[0];
         json.childNodes = [];
         ops.push(json1.insertOp(keyPath, json));
       } else if (nodeType === Node.TEXT_NODE) {
-        ops.push(json1.insertOp(keyPath, _parseHtml(n.nodeValue).childNodes[0]));
+        ops.push(json1.insertOp(keyPath, parseHtml(n.nodeValue).childNodes[0]));
       } else {
         console.warn('cannot serialize node', n);
       }
@@ -93,7 +52,7 @@ const _mutateHtml = (el, text) => {
     },
     onBeforeNodeValueChange: (n, newValue) => {
       const keyPath = _getKeyPath(el, n);
-      ops.push(json1.replaceOp(keyPath, _parseHtml(n.nodeValue).childNodes[0], _parseHtml(newValue).childNodes[0]));
+      ops.push(json1.replaceOp(keyPath, parseHtml(n.nodeValue).childNodes[0], parseHtml(newValue).childNodes[0]));
     },
     onBeforeAddAttr: (n, name, value) => {
       const keyPath = _getKeyPath(el, n);
@@ -115,6 +74,7 @@ const _mutateHtml = (el, text) => {
   });
   return ops;
 };
+
 class HTMLClient extends EventTarget {
   constructor(clientId) {
     super();
@@ -132,7 +92,7 @@ class HTMLClient extends EventTarget {
     const observer = new MutationObserver(() => {
       const newText = parsedHtmlEl.innerHTML;
 
-      parsedHtmlEl2.innerHTML = _serializeHtml(this.state.json);
+      parsedHtmlEl2.innerHTML = serializeHtml(this.state.json);
       const ops = _mutateHtml(parsedHtmlEl2, newText);
       this.applyOps(ops);
       this.dispatchEvent(new CustomEvent('message', {
@@ -170,7 +130,7 @@ class HTMLClient extends EventTarget {
     }
   }
   pullInit(json, baseIndex) {
-    const text = _serializeHtml(json);
+    const text = serializeHtml(json);
     morphdom(this.state.parsedHtmlEl, `<div>${text}</div>`);
     this.state.parsedHtmlEl.observer.takeRecords();
     this.state.json = json;
@@ -188,7 +148,7 @@ class HTMLClient extends EventTarget {
     if (baseIndex === this.state.baseIndex) {
       this.applyOps(ops);
 
-      const text = _serializeHtml(this.state.json);
+      const text = serializeHtml(this.state.json);
       morphdom(this.state.parsedHtmlEl, `<div>${text}</div>`);
       this.state.parsedHtmlEl.observer.takeRecords();
 
@@ -210,7 +170,7 @@ class HTMLClient extends EventTarget {
     this.state.baseIndex += ops.length;
   }
   pushUpdate(text) {
-    text = _serializeHtml(_parseHtml(text));
+    text = serializeHtml(parseHtml(text));
 
     const ops = _mutateHtml(this.state.parsedHtmlEl, text);
     this.state.parsedHtmlEl.observer.takeRecords();
@@ -223,85 +183,4 @@ class HTMLClient extends EventTarget {
     return text;
   }
 }
-
-class HTMLServer extends EventTarget {
-  constructor(text) {
-    super();
-
-    this.firstJson = _parseHtml(text);
-    this.lastJson = JSON.parse(JSON.stringify(this.firstJson));
-    this.baseIndex = 0;
-    this.history = [];
-    this.connections = [];
-  }
-  connect(c) {
-    this.dispatchEvent(new CustomEvent('send', {
-      detail: {
-        connection: c,
-        message: {
-          type: 'init',
-          json: JSON.parse(JSON.stringify(this.lastJson)),
-          baseIndex: this.baseIndex + this.history.length,
-        },
-      },
-    }));
-    this.connections.push(c);
-  }
-  pushOps(ops, baseIndex, c) {
-    const currentBaseIndex = this.baseIndex + this.history.length;
-    if (currentBaseIndex !== baseIndex) {
-      const delay = currentBaseIndex - baseIndex;
-      for (let i = 0; i < ops.length; i++) {
-        for (let j = 0; j < delay; j++) {
-          const result = json1.type.tryTransform(ops[i], this.history[this.history.length - delay + j], 'left');
-          if (result.ok) {
-            ops[i] = result.result;
-          } else {
-            ops[i] = null;
-            break;
-          }
-        }
-      }
-      ops = ops.filter(op => op !== null);
-    }
-    if (ops.length > 0) {
-      for (let i = 0; i < this.connections.length; i++) {
-        const c2 = this.connections[i];
-        if (c2 !== c) {
-          this.dispatchEvent(new CustomEvent('send', {
-            detail: {
-              connection: c2,
-              message: {
-                type: 'ops',
-                ops,
-                baseIndex: this.baseIndex + this.history.length,
-              },
-            },
-          }));
-        }
-      }
-
-      for (let i = 0; i < ops.length; i++) {
-        this.lastJson = json1.type.apply(this.lastJson, ops[i]);
-      }
-      this.history.push.apply(this.history, ops);
-    }
-    if (currentBaseIndex !== baseIndex) {
-      this.dispatchEvent(new CustomEvent('send', {
-        detail: {
-          connection: c,
-          message: {
-            type: 'init',
-            json: JSON.parse(JSON.stringify(this.lastJson)),
-            baseIndex: this.baseIndex + this.history.length,
-          },
-        },
-      }));
-    }
-  }
-}
-
-export {
-  HTMLClient,
-  HTMLServer,
-};
+export default HTMLClient;

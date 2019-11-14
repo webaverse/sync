@@ -325,7 +325,8 @@ header > .login-form.phase-3 > .phaseless-content
       <textarea class=code id=code2 spellcheck=false></textarea>
     </div>
     <script type=module>
-import {HTMLServer, HTMLClient} from './sync.js';
+import HTMLServer from './sync-server.js';
+import HTMLClient from './sync-client.js';
 
 const htmlServer = new HTMLServer(`<a class=lol>zol<b></b><xr-iframe src=lol></xr-iframe></a>`);
 [
