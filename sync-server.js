@@ -1,6 +1,43 @@
 import json1 from './json1.js';
 import {parseHtml, serializeHtml} from './html-utils.js';
 
+const EventTarget = self.EventTarget || class EventTargetShim {
+  constructor() {
+    this.listeners = {};
+  }
+  dispatchEvent(e) {
+    const listeners = this.listeners[e.type];
+    if (listeners) {
+      for (let i = 0; i < listeners.length; i++) {
+        listeners[i](e);
+      }
+    }
+  }
+  addEventListener(e, fn) {
+    let listeners = this.listeners[e];
+    if (!listeners) {
+      listeners = [];
+      this.listeners[e] = listeners;
+    }
+    listeners.push(fn);
+  }
+  removeEventListener(e, fn) {
+    const listeners = this.listeners[e];
+    if (listeners) {
+      const index = listners.indexOf(fn);
+      if (index !== -1) {
+        listeners.splice(index, 1);
+      }
+    }
+  }
+}
+const CustomEvent = self.CustomEvent || class CustomEventShim {
+  constructor(type, options = {}) {
+    this.type = type;
+    this.detail = options.detail;
+  }
+}
+
 class HTMLServer extends EventTarget {
   constructor(text) {
     super();
@@ -77,4 +114,8 @@ class HTMLServer extends EventTarget {
     }
   }
 }
-export default HTMLServer;
+export {
+  EventTarget,
+  CustomEvent,
+  HTMLServer,
+};
