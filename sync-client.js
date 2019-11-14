@@ -76,13 +76,14 @@ const _mutateHtml = (el, text) => {
 };
 
 class HTMLClient extends EventTarget {
-  constructor() {
+  constructor(text = '') {
     super();
 
     const userCode = document.createElement('div');
     userCode.classList.add('user-code');
     document.body.appendChild(userCode);
     const parsedHtmlEl = document.createElement('div');
+    parsedHtmlEl.innerHTML = text;
     userCode.appendChild(parsedHtmlEl);
 
     const parsedHtmlEl2 = document.createElement('div');
@@ -110,7 +111,7 @@ class HTMLClient extends EventTarget {
 
     this.state = {
       parsedHtmlEl,
-      json: null,
+      json: serializeHtml(text),
       baseIndex: 0,
       sync: true,
     };
