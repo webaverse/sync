@@ -328,7 +328,9 @@ header > .login-form.phase-3 > .phaseless-content
 import {HTMLServer} from './sync-server.js';
 import HTMLClient from './sync-client.js';
 
-const htmlServer = new HTMLServer(`<a class=lol>zol<b></b><xr-iframe src=lol></xr-iframe></a>`);
+const htmlServer = new HTMLServer(`<a class=lol>zol<b></b><xr-iframe src=lol></xr-iframe></a>`, {
+  maxHistory: 10,
+});
 [
   [document.getElementById('code1'), document.getElementById('push1'), document.getElementById('pull1')],
   [document.getElementById('code2'), document.getElementById('push2'), document.getElementById('pull2')],
