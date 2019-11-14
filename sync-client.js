@@ -181,8 +181,8 @@ class HTMLClient extends EventTarget {
       const ops = _mutateHtml(this.state.parsedHtmlEl, text);
       this.state.parsedHtmlEl.observer.takeRecords();
       console.log('ops', ops);
-      this.applyOps(ops);
       const {baseIndex} = this.state;
+      this.applyOps(ops);
       this.dispatchEvent(new CustomEvent('message', {
         detail: {
           ops,
