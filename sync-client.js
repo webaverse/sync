@@ -1,6 +1,6 @@
 import json1 from './json1.js';
 import morphdom from './morphdom.js';
-import {parseHtml, serializeHtml} from './html-utils.js';
+import {parseHtml, serializeHtml, reifyHtml} from './html-utils.js';
 
 const maxTextLength = 1024 * 1024;
 
@@ -32,9 +32,9 @@ const _getNodeIndex = n => {
   // }
   return -1;
 };
-const _mutateHtml = (el, text) => {
+const _mutateHtml = (el, el2) => {
   const ops = [];
-  morphdom(el, `<div>${text}</div>`, {
+  morphdom(el, el2, {
     onNodeAdded: n => {
       const keyPath = _getKeyPath(el, n);
       const {nodeType} = n;
@@ -88,13 +88,9 @@ class HTMLClient extends EventTarget {
     parsedHtmlEl.innerHTML = text;
     userCode.appendChild(parsedHtmlEl);
 
-    const parsedHtmlEl2 = document.createElement('div');
-
     const observer = new MutationObserver(() => {
-      const newText = parsedHtmlEl.innerHTML;
-
-      parsedHtmlEl2.innerHTML = serializeHtml(this.state.json);
-      const ops = _mutateHtml(parsedHtmlEl2, newText);
+      const parsedHtmlEl2 = reifyHtml(this.state.json);
+      const ops = _mutateHtml(parsedHtmlEl2, parsedHtmlEl);
       const {baseIndex} = this.state;
       this.applyOps(ops);
       this.dispatchEvent(new CustomEvent('message', {
@@ -104,7 +100,7 @@ class HTMLClient extends EventTarget {
         },
       }));
       this.dispatchEvent(new CustomEvent('localUpdate', {
-        detail: newText,
+        detail: serializeHtml(this.state.json),
       }));
     });
     observer.observe(parsedHtmlEl, {
@@ -182,7 +178,9 @@ class HTMLClient extends EventTarget {
     if (text.length < maxTextLength) {
       text = serializeHtml(parseHtml(text));
 
-      const ops = _mutateHtml(this.state.parsedHtmlEl, text);
+      const parsedHtmlEl2 = document.createElement('div');
+      parsedHtmlEl2.innerHTML = text;
+      const ops = _mutateHtml(this.state.parsedHtmlEl, parsedHtmlEl2);
       this.state.parsedHtmlEl.observer.takeRecords();
       console.log('ops', ops);
       const {baseIndex} = this.state;
