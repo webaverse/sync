@@ -52,6 +52,9 @@ class HTMLServer extends EventTarget {
     }
     this.options = options;
   }
+  getHtml() {
+    return serializeHtml(this.lastJson);
+  }
   connect(c) {
     this.dispatchEvent(new CustomEvent('send', {
       detail: {
