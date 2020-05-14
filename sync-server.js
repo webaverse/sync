@@ -1,5 +1,4 @@
 import json1 from './json1.js';
-import {parseHtml, serializeHtml} from './html-utils.js';
 
 const EventTarget = globalThis.EventTarget || class EventTargetShim {
   constructor() {
@@ -31,19 +30,19 @@ const EventTarget = globalThis.EventTarget || class EventTargetShim {
     }
   }
 }
-const CustomEvent = globalThis.CustomEvent || class CustomEventShim {
+const MessageEvent = globalThis.MessageEvent || class MessageEventShim {
   constructor(type, options = {}) {
     this.type = type;
-    this.detail = options.detail;
+    this.data = options.data;
   }
 }
 
-class HTMLServer extends EventTarget {
-  constructor(text, options = {}) {
+class JSONServer extends EventTarget {
+  constructor(j, options = {}) {
     super();
 
-    this.firstJson = parseHtml(text);
-    this.lastJson = JSON.parse(JSON.stringify(this.firstJson));
+    // this.firstJson = j;
+    this.lastJson = JSON.parse(JSON.stringify(j));
     this.baseIndex = 0;
     this.history = [];
     this.connections = [];
@@ -52,12 +51,12 @@ class HTMLServer extends EventTarget {
     }
     this.options = options;
   }
-  getHtml() {
-    return serializeHtml(this.lastJson);
+  getJson() {
+    return JSON.parse(JSON.stringify(this.lastJson));
   }
   connect(c) {
-    this.dispatchEvent(new CustomEvent('send', {
-      detail: {
+    this.dispatchEvent(new MessageEvent('send', {
+      data: {
         connection: c,
         message: {
           method: 'init',
@@ -103,8 +102,8 @@ class HTMLServer extends EventTarget {
       for (let i = 0; i < this.connections.length; i++) {
         const c2 = this.connections[i];
         if (c2 !== c) {
-          this.dispatchEvent(new CustomEvent('send', {
-            detail: {
+          this.dispatchEvent(new MessageEvent('send', {
+            data: {
               connection: c2,
               message: {
                 method: 'ops',
@@ -126,8 +125,8 @@ class HTMLServer extends EventTarget {
       }
     }
     if (currentBaseIndex !== baseIndex) {
-      this.dispatchEvent(new CustomEvent('send', {
-        detail: {
+      this.dispatchEvent(new MessageEvent('send', {
+        data: {
           connection: c,
           message: {
             method: 'init',
@@ -141,6 +140,6 @@ class HTMLServer extends EventTarget {
 }
 export {
   EventTarget,
-  CustomEvent,
-  HTMLServer,
+  MessageEvent,
+  JSONServer,
 };

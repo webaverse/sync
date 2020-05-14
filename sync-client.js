@@ -1,10 +1,10 @@
 import json1 from './json1.js';
-import morphdom from './morphdom.js';
-import {parseHtml, serializeHtml, reifyHtml} from './html-utils.js';
+// import morphdom from './morphdom.js';
+// import {parseHtml, serializeHtml, reifyHtml} from './html-utils.js';
 
-const maxTextLength = 1024 * 1024;
+// const maxTextLength = 1024 * 1024;
 
-const _getKeyPath = (parent, child) => {
+/* const _getKeyPath = (parent, child) => {
   const result = [];
   for (; child; child = child.parentNode) {
     if (child === parent) {
@@ -75,13 +75,13 @@ const _mutateHtml = (el, el2) => {
     },
   });
   return ops;
-};
+}; */
 
-class HTMLClient extends EventTarget {
-  constructor(text = '') {
+class JSONClient extends EventTarget {
+  constructor(j) {
     super();
 
-    const userCode = document.createElement('div');
+    /* const userCode = document.createElement('div');
     userCode.classList.add('user-code');
     document.body.appendChild(userCode);
     const parsedHtmlEl = document.createElement('div');
@@ -109,11 +109,12 @@ class HTMLClient extends EventTarget {
       childList: true,
       subtree: true,
     });
-    parsedHtmlEl.observer = observer;
+    parsedHtmlEl.observer = observer; */
 
     this.state = {
-      parsedHtmlEl,
-      json: parseHtml(text),
+      // parsedHtmlEl,
+      // json: parseHtml(text),
+      json: j,
       baseIndex: 0,
       sync: true,
     };
@@ -138,9 +139,9 @@ class HTMLClient extends EventTarget {
     }
   }
   pullInit(json, baseIndex) {
-    const text = serializeHtml(json);
-    morphdom(this.state.parsedHtmlEl, `<div>${text}</div>`);
-    this.state.parsedHtmlEl.observer.takeRecords();
+    // const text = serializeHtml(json);
+    // morphdom(this.state.parsedHtmlEl, `<div>${text}</div>`);
+    // this.state.parsedHtmlEl.observer.takeRecords();
     this.state.json = json;
     this.state.baseIndex = baseIndex;
     if (!this.state.sync) {
@@ -148,20 +149,20 @@ class HTMLClient extends EventTarget {
     }
     this.state.sync = true;
 
-    this.dispatchEvent(new CustomEvent('localUpdate', {
-      detail: text,
+    this.dispatchEvent(new MessageEvent('localUpdate', {
+      data: json,
     }));
   }
   pullOps(ops, baseIndex) {
     if (baseIndex === this.state.baseIndex) {
       this.applyOps(ops);
 
-      const text = serializeHtml(this.state.json);
+      /* const text = serializeHtml(this.state.json);
       morphdom(this.state.parsedHtmlEl, `<div>${text}</div>`);
-      this.state.parsedHtmlEl.observer.takeRecords();
+      this.state.parsedHtmlEl.observer.takeRecords(); */
 
-      this.dispatchEvent(new CustomEvent('localUpdate', {
-        detail: text,
+      this.dispatchEvent(new MessageEvent('localUpdate', {
+        data: this.state.json,
       }));
     } else {
       console.log('desync', ops, baseIndex, this.state.baseIndex);
@@ -174,7 +175,34 @@ class HTMLClient extends EventTarget {
     }
     this.state.baseIndex += ops.length;
   }
-  pushUpdate(text) {
+  applyOpsLocal(ops) {
+    const {baseIndex} = this.state;
+    this.applyOps(ops);
+    this.dispatchEvent(new MessageEvent('message', {
+      data: {
+        ops,
+        baseIndex,
+      },
+    }));
+  }
+  getItem(k) {
+    return this.state.json[k];
+  }
+  setItem(k, v) {
+    const ops = [
+      !(k in this.state.json) ? json1.insertOp([k], v) : json1.replaceOp([k], this.state.json[k], v),
+    ];
+    this.applyOpsLocal(ops);
+  }
+  removeItem(k) {
+    if (k in this.state.json) {
+      const ops = [
+        json1.removeOp([k]),
+      ];
+      this.applyOpsLocal(ops);
+    }
+  }
+  /* pushUpdate(text) {
     if (text.length < maxTextLength) {
       text = serializeHtml(parseHtml(text));
 
@@ -185,8 +213,8 @@ class HTMLClient extends EventTarget {
       console.log('ops', ops);
       const {baseIndex} = this.state;
       this.applyOps(ops);
-      this.dispatchEvent(new CustomEvent('message', {
-        detail: {
+      this.dispatchEvent(new MessageEvent('message', {
+        data: {
           ops,
           baseIndex,
         },
@@ -196,6 +224,6 @@ class HTMLClient extends EventTarget {
     } else {
       throw new Error(`text too large: ${text.length}/${maxTextLength}`);
     }
-  }
+  } */
 }
-export default HTMLClient;
+export {JSONClient};
