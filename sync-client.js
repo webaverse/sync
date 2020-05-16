@@ -186,15 +186,27 @@ class JSONClient extends EventTarget {
     }));
   }
   getItem(k) {
+    if (!Array.isArray(k)) {
+      k = [k + ''];
+    }
     return this.state.json[k];
   }
   setItem(k, v) {
+    if (!Array.isArray(k)) {
+      k = [k + ''];
+    }
     const ops = [
-      !(k in this.state.json) ? json1.insertOp([k], v) : json1.replaceOp([k], this.state.json[k], v),
+      !(k in this.state.json) ?
+        json1.insertOp([k], v)
+      :
+        json1.replaceOp([k], this.state.json[k], v),
     ];
     this.applyOpsLocal(ops);
   }
   removeItem(k) {
+    if (!Array.isArray(k)) {
+      k = [k + ''];
+    }
     if (k in this.state.json) {
       const ops = [
         json1.removeOp([k]),
