@@ -77,6 +77,37 @@ const _mutateHtml = (el, el2) => {
   return ops;
 }; */
 
+const _ref = (j, ks) => {
+  for (let i = 0; i < ks.length; i++) {
+    if (typeof j !== 'object' || j === null) {
+      break;
+    }
+    const k = ks[i];
+    j = j[k];
+  }
+  return j;
+};
+const _ref2 = (src, ks, dst) => {
+  let leftKs = [];
+  let rightKs = [];
+  for (let i = 0; i < ks.length; i++) {
+    if (typeof src === 'object' && src !== null) {
+      const k = ks[i];
+      src = src[k];
+      leftKs.push(k);
+    } else {
+      rightKs = ks.slice(i);
+      break;
+    }
+  }
+  for (let i = rightKs.length - 1; i >= 0; i--) {
+    const k = rightKs[i];
+    dst = {
+      [k]: dst,
+    };
+  }
+  return [leftKs, dst];
+};
 class JSONClient extends EventTarget {
   constructor(j) {
     super();
@@ -187,29 +218,35 @@ class JSONClient extends EventTarget {
   }
   getItem(k) {
     if (!Array.isArray(k)) {
-      k = [k + ''];
+      k = [k];
     }
-    return this.state.json[k];
+    return _ref(this.state.json, k);
   }
   setItem(k, v) {
     if (!Array.isArray(k)) {
-      k = [k + ''];
+      k = [k];
     }
-    const ops = [
-      !(k in this.state.json) ?
-        json1.insertOp([k], v)
-      :
-        json1.replaceOp([k], this.state.json[k], v),
-    ];
+    const oldV = _ref(this.state.json, k);
+    let ops;
+    if (oldV === undefined) {
+      const [newK, newV] = _ref2(this.state.json, k, v);
+      ops = [
+        json1.insertOp(newK, newV),
+      ];
+    } else {
+      ops = [
+        json1.replaceOp(k, oldV, v),
+      ];
+    }
     this.applyOpsLocal(ops);
   }
   removeItem(k) {
     if (!Array.isArray(k)) {
-      k = [k + ''];
+      k = [k];
     }
     if (k in this.state.json) {
       const ops = [
-        json1.removeOp([k]),
+        json1.removeOp(k),
       ];
       this.applyOpsLocal(ops);
     }
