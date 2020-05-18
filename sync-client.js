@@ -244,7 +244,8 @@ class JSONClient extends EventTarget {
     if (!Array.isArray(k)) {
       k = [k];
     }
-    if (k in this.state.json) {
+    const oldV = _ref(this.state.json, k);
+    if (oldV !== undefined) {
       const ops = [
         json1.removeOp(k),
       ];
